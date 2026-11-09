@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4部位キャリパー法 体脂肪率計算</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4">
+<h1 class="text-xl font-bold mb-1 text-center">📏 キャリパー法 体脂肪率計算</h1>
+<p class="text-gray-400 text-sm mb-4 text-center">Jackson &amp; Pollock 4部位法 / 3部位法</p>
+
+<div class="w-full max-w-xl space-y-4">
+  <div class="bg-gray-800 rounded-xl p-4">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <label class="flex flex-col text-xs text-gray-400">
+        性別
+        <div class="flex gap-2 mt-1">
+          <button class="sex-btn flex-1 py-1.5 rounded text-sm font-bold transition ring-2 ring-blue-400 bg-gray-700" data-sex="male">男性</button>
+          <button class="sex-btn flex-1 py-1.5 rounded text-sm font-bold transition bg-gray-700 hover:bg-gray-600" data-sex="female">女性</button>
+        </div>
+      </label>
+      <label class="flex flex-col text-xs text-gray-400">
+        年齢
+        <input id="age" type="number" value="30" min="18" max="80" class="mt-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm">
+      </label>
+    </div>
+
+    <div class="text-xs font-bold text-gray-300 mb-3">キャリパー測定値 (mm) — 4部位法</div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <label class="flex flex-col text-xs text-gray-400">
+        腹部（Abdominal）
+        <input id="abdominal" type="number" value="15" min="1" max="80" step="0.5" class="mt-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm">
+      </label>
+      <label class="flex flex-col text-xs text-gray-400">
+        三頭筋（Tricep）
+        <input id="tricep" type="number" value="10" min="1" max="80" step="0.5" class="mt-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm">
+      </label>
+      <label class="flex flex-col text-xs text-gray-400">
+        腸骨上（Suprailiac）
+        <input id="suprailiac" type="number" value="12" min="1" max="80" step="0.5" class="mt-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm">
+      </label>
+      <label class="flex flex-col text-xs text-gray-400">
+        大腿（Thigh）
+        <input id="thigh" type="number" value="14" min="1" max="80" step="0.5" class="mt-1 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm">
+      </label>
+    </div>
+
+    <button id="calcBtn" class="w-full bg-blue-600 hover:bg-blue-500 rounded py-2 font-bold transition">計算</button>
+  </div>
+
+  <div id="resultCard" class="bg-gray-800 rounded-xl p-4 hidden">
+    <div class="text-center mb-4">
+      <div class="text-5xl font-bold text-blue-400 font-mono" id="bfPct">--%</div>
+      <div class="text-gray-400 text-sm mt-1" id="bfCategory"></div>
+    </div>
+    <div class="grid grid-cols-3 gap-3 text-center text-xs mb-4">
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-gray-400">脂肪量</div>
+        <div class="font-bold text-yellow-400 text-lg" id="fatMass">-</div>
+        <div class="text-gray-500">kg</div>
+      </div>
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-gray-400">除脂肪体重</div>
+        <div class="font-bold text-green-400 text-lg" id="leanMass">-</div>
+        <div class="text-gray-500">kg</div>
+      </div>
+      <div class="bg-gray-700 rounded p-2">
+        <div class="text-gray-400">体密度</div>
+        <div class="font-bold text-purple-400 text-lg" id="density">-</div>
+        <div class="text-gray-500">g/cm³</div>
+      </div>
+    </div>
+    <div id="gauge" class="w-full h-5 rounded-full bg-gray-700 overflow-hidden mb-2">
+      <div id="gaugeBar" class="h-full rounded-full transition-all duration-500"></div>
+    </div>
+    <div class="flex justify-between text-xs text-gray-500">
+      <span>アスリート 5%</span><span>標準 15-20%</span><span>肥満 30%+</span>
+    </div>
+  </div>
+
+  <div class="bg-gray-800 rounded-xl p-4">
+    <div class="text-xs font-bold text-gray-300 mb-2">体脂肪率カテゴリ（ACSM）</div>
+    <div class="text-xs text-gray-400 space-y-1" id="catTable"></div>
+  </div>
+
+  <div class="bg-gray-800 rounded-xl p-4">
+    <div class="text-xs font-bold text-gray-300 mb-2">体重 (kg)</div>
+    <input id="bodyWeight" type="number" value="70" min="30" max="200" class="bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm w-32">
+    <span class="text-xs text-gray-500 ml-2">（脂肪量/除脂肪量計算に使用）</span>
+  </div>
+</div>
+
+<script>
+let sex='male';
+document.querySelectorAll('.sex-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.sex-btn').forEach(b=>{ b.classList.remove('ring-2','ring-blue-400'); });
+    btn.classList.add('ring-2','ring-blue-400'); sex=btn.dataset.sex;
+  });
+});
+
+const CATEGORIES={
+  male:[
+    {label:'超アスリート',max:6,color:'#60a5fa'},
+    {label:'アスリート',max:13,color:'#34d399'},
+    {label:'フィットネス',max:17,color:'#86efac'},
+    {label:'標準',max:24,color:'#fbbf24'},
+    {label:'肥満傾向',max:30,color:'#f97316'},
+    {label:'肥満',max:100,color:'#ef4444'},
+  ],
+  female:[
+    {label:'超アスリート',max:14,color:'#60a5fa'},
+    {label:'アスリート',max:20,color:'#34d399'},
+    {label:'フィットネス',max:24,color:'#86efac'},
+    {label:'標準',max:31,color:'#fbbf24'},
+    {label:'肥満傾向',max:36,color:'#f97316'},
+    {label:'肥満',max:100,color:'#ef4444'},
+  ]
+};
+
+function renderCatTable(){
+  const cats=CATEGORIES[sex];
+  let prev=0;
+  document.getElementById('catTable').innerHTML=cats.map(c=>{
+    const range=`${prev}% 〜 ${c.max<100?c.max+'%':''}`;
+    prev=c.max; return `<div class="flex gap-2 items-center"><span class="w-2 h-2 rounded-full" style="background:${c.color}"></span><span class="w-28">${c.label}</span><span>${range}</span></div>`;
+  }).join('');
+}
+
+function getCategory(bf){
+  const cats=CATEGORIES[sex];
+  let prev=0;
+  for(const c of cats){ if(bf>=prev&&bf<c.max) return c; prev=c.max; }
+  return cats[cats.length-1];
+}
+
+function calculate(){
+  const age=parseInt(document.getElementById('age').value)||30;
+  const ab=parseFloat(document.getElementById('abdominal').value)||0;
+  const tr=parseFloat(document.getElementById('tricep').value)||0;
+  const su=parseFloat(document.getElementById('suprailiac').value)||0;
+  const th=parseFloat(document.getElementById('thigh').value)||0;
+  const bw=parseFloat(document.getElementById('bodyWeight').value)||70;
+  const S=ab+tr+su+th;
+
+  // Jackson & Pollock 4-site formula
+  let D;
+  if(sex==='male'){
+    D=1.112-(0.00043499*S)+(0.00000055*S*S)-(0.00028826*age);
+  } else {
+    D=1.097-(0.00046971*S)+(0.00000056*S*S)-(0.00012828*age);
+  }
+  const bf=(4.95/D-4.5)*100;
+  const bfClamped=Math.max(2,Math.min(60,bf));
+  const fatMass=bw*bfClamped/100;
+  const leanMass=bw-fatMass;
+  const cat=getCategory(bfClamped);
+
+  document.getElementById('bfPct').textContent=bfClamped.toFixed(1)+'%';
+  document.getElementById('bfCategory').textContent=cat.label;
+  document.getElementById('bfCategory').style.color=cat.color;
+  document.getElementById('density').textContent=D.toFixed(4);
+  document.getElementById('fatMass').textContent=fatMass.toFixed(1);
+  document.getElementById('leanMass').textContent=leanMass.toFixed(1);
+
+  const bar=document.getElementById('gaugeBar');
+  bar.style.width=Math.min(100,bfClamped*100/40)+'%';
+  bar.style.background=cat.color;
+
+  document.getElementById('resultCard').classList.remove('hidden');
+}
+
+document.getElementById('calcBtn').addEventListener('click',calculate);
+['age','abdominal','tricep','suprailiac','thigh','bodyWeight'].forEach(id=>document.getElementById(id).addEventListener('input',calculate));
+renderCatTable();
+calculate();
+</script>
+</body>
+</html>
